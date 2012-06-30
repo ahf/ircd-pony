@@ -1,9 +1,10 @@
 {application,ircd_pony_core,
-             [{description,"An experimental IRC client"},
+             [{description,"An experimental IRCd for Erlang"},
               {vsn,"0.1"},
               {registered,[]},
-              {applications,[kernel,stdlib]},
+              {applications,[kernel,stdlib,ranch]},
               {mod,{ircd_pony_core_app,[]}},
               {env,[]},
-              {modules,[hostmask,ircd_pony_core_app,ircd_pony_core_sup,
-                        protocol]}]}.
+              {modules,[ircd_pony,ircd_pony_client,ircd_pony_core_app,
+                        ircd_pony_core_sup,ircd_pony_hostmask,
+                        ircd_pony_protocol]}]}.

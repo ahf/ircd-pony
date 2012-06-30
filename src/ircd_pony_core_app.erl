@@ -10,7 +10,10 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    ircd_pony_core_sup:start_link().
+    ircd_pony_core_sup:start_link(),
+    ranch:start_listener(ircd_pony, 100,
+                         ranch_tcp, [{port, 6667}],
+                         ircd_pony_client, []).
 
 stop(_State) ->
     ok.
