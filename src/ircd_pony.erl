@@ -4,7 +4,7 @@
 -export([start/0]).
 
 dependent_apps() ->
-    {ok, Apps} = application:get_key(admanager, applications),
+    {ok, Apps} = application:get_key(ircd_pony, applications),
     Apps -- [kernel, stdlib].
 
 start() ->
