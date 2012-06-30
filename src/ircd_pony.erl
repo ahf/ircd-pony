@@ -4,13 +4,13 @@
 -export([start/0]).
 
 dependent_apps() ->
-    {ok, Apps} = application:get_key(ircd_pony, applications),
+    {ok, Apps} = application:get_key(ircd_pony_core, applications),
     Apps -- [kernel, stdlib].
 
 start() ->
-    application:load(ircd_pony),
+    application:load(ircd_pony_core),
     [ ensure_started(A) || A <- dependent_apps() ],
-    application:start(ircd_pony).
+    application:start(ircd_pony_core).
 
 ensure_started(App) ->
     case application:start(App) of
