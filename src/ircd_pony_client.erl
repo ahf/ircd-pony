@@ -30,22 +30,12 @@ start_link(ListenerPid, Socket, Transport, Opts) ->
                                                       Opts], []).    
 
 %%%===================================================================
-%%% gen_server callbacks
-%%%===================================================================
 
-%%--------------------------------------------------------------------
 %% @private
-%% @doc
-%% Initializes the server
-%%
-%% @spec init(Args) -> {ok, State} |
-%%                     {ok, State, Timeout} |
-%%                     ignore |
-%%                     {stop, Reason}
-%% @end
-%%--------------------------------------------------------------------
 init([ListenerPid, Socket, Transport, _Opts]) ->
+    %% This should be called when we know the handshake went well
     ranch:accept_ack(ListenerPid),
+    %% Quickly Close the socket
     Transport:close(Socket),
     {ok, #state{ listener = ListenerPid,
                  transport = Transport,
