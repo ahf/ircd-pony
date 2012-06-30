@@ -1,4 +1,4 @@
--module(protocol).
+-module(ircd_pony_protocol).
 -export([parse/1]).
 
 parse_argument(<<$:, X/binary>>) ->
