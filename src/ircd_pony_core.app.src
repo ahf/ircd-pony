@@ -1,6 +1,6 @@
 {application, ircd_pony_core,
  [
-  {description, "An experimental IRC client"},
+  {description, "An experimental IRCd for Erlang"},
   {vsn, "0.1"},
   {registered, []},
   {applications, [
