@@ -15,5 +15,9 @@ compile:
 clean:
 	rebar clean
 
-.PHONY: all get-deps compile clean
+console:
+	erl -pa deps/*/ebin ebin
+
+.PHONY: all get-deps compile clean console
+
 
