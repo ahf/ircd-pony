@@ -32,7 +32,7 @@ start_link(ListenerPid, Socket, Transport, Opts) ->
                                     Opts], []).    
 
 msg(Client, Msg) ->
-    gen_server:cast(Client, {msg, Msg}).
+    gen_server:cast(Client, Msg).
 
 %%%===================================================================
 
@@ -50,6 +50,11 @@ handle_call(Request, _From, State) ->
     {reply, Reply, State}.
 
 %% @private
+handle_cast({numeric, Numeric, Text},
+            #state { socket = Sock,
+                     synchronized = {yes, _} } = State) ->
+    out(Sock, pony_protocol:render_numeric(Numeric, Text)),
+    {noreply, State};
 handle_cast({msg, M}, #state { socket = Sock,
                                synchronized = {yes, _} } = State) ->
     out(Sock, pony_protocol:render(M)),
@@ -82,9 +87,13 @@ handle_info(timeout, #state { synchronized = no,
     %% process a limited amount of new connections
     ranch:accept_ack(Listener),
     ack(Socket),
+    msg(self(), {numeric, 'RPL_WELCOME', [pony:me(), "*", pony:description(), "*"]}),
+    msg(self(), {numeric, 'RPL_YOURHOST', [pony:me(), "*",
+                                           pony:server(), pony:version()]}),
+    %% this.SendMotd()
     {noreply, State#state { synchronized = {yes, Hostname} }};
 handle_info(Info, State) ->
-    lager:warning("Unknown message received: ~p", [Info]),
+    lager:warning("Unknown message received: ~p State: ~p", [Info, State]),
     {noreply, State}.
 
 %% @private
@@ -100,8 +109,8 @@ code_change(_OldVsn, State, _Extra) ->
 ack({Transport, Socket}) ->
     Transport:setopts(Socket, [{active, once}]).
 
-handle_message(_M, State) ->
-    %% Ignore for now
+handle_message(M, State) ->
+    lager:debug("Incoming Message: ~s", [pony_protocol:stringify(M)]),
     State.
 
 %% @doc Synchronize the socket

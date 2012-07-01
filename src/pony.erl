@@ -1,6 +1,6 @@
 -module(pony).
 
--export([start/0, me/0]).
+-export([start/0, me/0, description/0, server/0, version/0]).
 
 start() ->
     application:load(pony_core),
@@ -11,6 +11,17 @@ start() ->
 me() ->
     {ok, N} = application:get_env(pony_core, host),
     N.
+
+description() ->
+    {ok, N} = application:get_env(pony_core, description),
+    N.
+
+version() ->
+    {ok, V} = application:get_key(pony_core, vsn),
+    V.
+
+server() ->
+    io_lib:format("~s[todo]", [me()]).
 
 %% ----------------------------------------------------------------------
 ensure_started(App) ->

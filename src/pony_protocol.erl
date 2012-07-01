@@ -1,7 +1,7 @@
 -module(pony_protocol).
 -export([parse/1, stringify/1, stringify/3]).
 -export([numeric/1]).
--export([render/1]).
+-export([render/1, render_numeric/2]).
 
 command_to_atom(X) when is_binary(X) ->
     command_to_atom(binary_to_list(X));
@@ -292,6 +292,11 @@ numeric(N) when is_atom(N) ->
         'RPL_RSACHALLENGE2'     -> 740;
         'RPL_ENDOFRSACHALLENGE2'-> 741
     end.
+
+render_numeric('RPL_WELCOME', Args) ->
+    io_lib:format(":~s 001 ~s :Welcome to the ~s Internet Relay Chat Network ~s", Args);
+render_numeric('RPL_YOURHOST', Args) ->
+    io_lib:format(":~s 002 ~s :Your host is ~s, running version ~s", Args).
 
 render(_X) ->
     "todo".
