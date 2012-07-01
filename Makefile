@@ -19,7 +19,7 @@ clean:
 	rebar clean
 
 console:
-	erl -pa deps/*/ebin ebin
+	erl -config sys.config -pa deps/*/ebin ebin
 
 
 APPS = kernel stdlib sasl erts ssl tools os_mon runtime_tools crypto inets \

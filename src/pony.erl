@@ -9,7 +9,8 @@ start() ->
 
 %% @todo Raise this to the configuration file
 me() ->
-    "ircd-pony".
+    {ok, N} = application:get_env(pony, hostname),
+    N.
 
 %% ----------------------------------------------------------------------
 ensure_started(App) ->
