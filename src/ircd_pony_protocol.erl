@@ -53,6 +53,8 @@ parse_prefix(<<$:, X/binary>>) ->
         [Prefix, Rest] -> parse_command(Prefix, Rest);
         _ -> {error, {missing_command, X}}
     end;
+parse_prefix(<<>>) ->
+    {error, {missing_command}};
 parse_prefix(<<Rest/binary>>) ->
     parse_command(<<>>, Rest).
 
