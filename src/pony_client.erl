@@ -59,10 +59,11 @@ handle_cast(Msg, State) ->
     {noreply, State}.
 
 %% @private
-handle_info({tcp, Socket, Chunk},
-            #state { socket = {_, Socket},
+handle_info({tcp, S, Chunk},
+            #state { socket = {_, S} = Socket,
                      synchronized = {yes, _},
                      cont = Cont } = State) ->
+    ack(Socket),
     case process_stream_chunk(Chunk, Cont) of
         {ok, NewCont} ->
             {noreply, State#state { cont = NewCont }};
