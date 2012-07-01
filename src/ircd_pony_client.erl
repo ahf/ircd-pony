@@ -88,10 +88,10 @@ sync(Sock) ->
     {ok, Hostname}.
 
 out({Transport, Socket}, Data) ->
-    Transport:send(Socket, Data).
+    Transport:send(Socket, [Data, <<"\r\n">>]).
 
 out({Transport, Socket}, Format, Params) ->
-    Transport:send(Socket, io_lib:format(Format, Params)).
+    Transport:send(Socket, [io_lib:format(Format, Params), <<"\r\n">>]).
 
 lookup_hostname({_Transport, Socket}) ->
     %% @todo should probably be a service on its own
