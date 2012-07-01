@@ -96,5 +96,5 @@ out({Transport, Socket}, Format, Params) ->
 lookup_hostname({_Transport, Socket}) ->
     %% @todo should probably be a service on its own
     {ok, {Address, _Port}} = inet:peername(Socket),
-    #hostent { h_name = Hostname } = inet:gethostbyaddr(Address),
+    {ok, #hostent { h_name = Hostname }} = inet:gethostbyaddr(Address),
     {ok, Hostname}.
