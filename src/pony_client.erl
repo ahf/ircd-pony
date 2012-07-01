@@ -64,6 +64,9 @@ handle_cast(Msg, State) ->
     {noreply, State}.
 
 %% @private
+handle_info({tcp_closed, S},
+            #state { socket = {_, S} } = State) ->
+    {stop, State};
 handle_info({tcp, S, Chunk},
             #state { socket = {_, S} = Socket,
                      synchronized = {yes, _},
