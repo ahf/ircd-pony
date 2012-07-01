@@ -129,7 +129,7 @@ process_stream_chunk(Chunk, Cont) ->
 process_stream_chunk(Chunk, Cont, Msgs) ->
     Data = <<Cont/binary, Chunk/binary>>,
     case binary:split(Data, <<"\r\n">>, []) of
-        [] ->
+        [_] ->
             return_messages(Msgs, Data);
         [Line, Rest] ->
             process_stream_chunk(<<>>, Rest, [Line | Msgs])
