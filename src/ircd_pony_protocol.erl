@@ -44,6 +44,7 @@ parse_argument(<<X/binary>>) ->
 parse_command(Prefix, X) ->
     case binary:split(X, <<" ">>) of
         [Command, Rest] -> {ok, Prefix, command_to_atom(Command), parse_argument(Rest)};
+        [Command] -> {ok, Prefix, command_to_atom(Command), []};
         _ -> {error, {missing_command, Prefix, X}}
     end.
 
