@@ -13,7 +13,7 @@
 
 -define(SERVER, ?MODULE). 
 
--record(state, { transport, socket, listener, synchronized }).
+-record(state, { socket, listener, synchronized }).
 
 %%%===================================================================
 %%% API
@@ -33,16 +33,10 @@ start_link(ListenerPid, Socket, Transport, Opts) ->
 
 %% @private
 init([ListenerPid, Socket, Transport, _Opts]) ->
-    %% This should be called when we know the handshake went well
-%%    ranch:accept_ack(ListenerPid),
-    %% Quickly Close the socket
-    %%    Transport:close(Socket),
-    Transport:setopts(Socket,
-                      [raw, binary]),
+    Transport:setopts(Socket, [raw, binary]),
     {ok, #state{ listener = ListenerPid,
-                 transport = Transport,
-                 socket = Socket,
-                 synchronized = false }, 0}.
+                 socket = {Transport, Socket},
+                 synchronized = false }, 0}. %% Note immediate timeout
 
 %% @private
 handle_call(_Request, _From, State) ->
@@ -55,11 +49,15 @@ handle_cast(_Msg, State) ->
 
 %% @private
 handle_info(timeout, #state { synchronized = false,
-                              transport = Transport,
+                              listener = Listener,
                               socket = Socket } = State) ->
     sync(Socket),
-    Transport:setopts(Socket, {active, once}),
-    {noreply, State};
+    %% We only let ranch continue when this client has been accepted
+    %% This effectively throttles the inbound connection so we at most
+    %% process a limited amount of new connections
+    ranch:accept_ack(Listener),
+    ack(Socket),
+    {noreply, State#state { synchronized = true }};
 handle_info(Info, State) ->
     lager:warning("Unknown message received: ~p", [Info]),
     {noreply, State}.
@@ -74,7 +72,25 @@ code_change(_OldVsn, State, _Extra) ->
 
 %%%===================================================================
 
-%% @doc Synchronize the socket
-sync(_Socket) ->
-    todo.
+ack({Transport, Socket}) ->
+    Transport:setopts(Socket, [{active, once}]).
 
+%% @doc Synchronize the socket
+sync(Sock) ->
+    out(Sock, "NOTICE AUTH :*** Processing connection to ~s ...",
+        [ircd_pony:me()]),
+    out(Sock, "NOTICE AUTH :*** Looking up your hostname ..."),
+    {ok, Hostname} = lookup_hostname(Sock),
+    out(Sock, "NOTICE AUTH :*** Found your hostname (~s) ...", [Hostname]),
+    %% @todo Unregistered proto handling goes here
+    {ok, Hostname}.
+
+out({Transport, Socket}, Data) ->
+    Transport:send(Socket, Data).
+
+out({Transport, Socket}, Format, Params) ->
+    Transport:send(Socket, io_lib:format(Format, Params)).
+
+lookup_hostname(Sock) ->
+    %% @todo should probably be a service on its own
+    todo.
