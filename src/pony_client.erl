@@ -98,3 +98,20 @@ lookup_hostname({_Transport, Socket}) ->
     {ok, {Address, _Port}} = inet:peername(Socket),
     {ok, #hostent { h_name = Hostname }} = inet:gethostbyaddr(Address),
     {ok, Hostname}.
+
+process_stream_chunk(Chunk, Cont) ->
+    process_stream_chunk(Chunk, Cont, []).
+
+process_stream_chunk(Chunk, Cont, Msgs) ->
+    Data = <<Cont/binary, Chunk/binary>>,
+    case binary:split(Data, <<"\r\n">>, []) of
+        [] ->
+            return_messages(Msgs, Data);
+        [Line, Rest] ->
+            process_stream_chunk(<<>>, Rest, [Line | Msgs])
+    end.
+
+return_messages([], Data) -> {ok, Data};
+return_messages(Msgs, Data) -> {msg, lists:reverse(Msgs), Data}.
+
+
