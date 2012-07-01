@@ -1,5 +1,5 @@
 -module(pony_protocol).
--export([parse/1]).
+-export([parse/1, stringify/1, stringify/3]).
 -export([numeric/1]).
 -export([render/1]).
 
@@ -63,6 +63,15 @@ parse(X) when is_binary(X) ->
     parse_prefix(X);
 parse(X) when is_list(X) ->
     parse(list_to_binary(X)).
+
+stringify(X) ->
+    case parse(X) of
+        {ok, Prefix, Command, Arguments} -> stringify(Prefix, Command, Arguments);
+        {error, _} -> "Error: Invalid message."
+    end.
+
+stringify(P, C, A) ->
+    io_lib:format("~p~n", [[{prefix, P}, {command, C}, {args, A}]]).
 
 numeric(N) when is_atom(N) ->
     case N of
