@@ -5,7 +5,7 @@
 -include_lib("kernel/include/inet.hrl").
 
 %% API
--export([start_link/4]).
+-export([start_link/4, msg/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -31,6 +31,9 @@ start_link(ListenerPid, Socket, Transport, Opts) ->
                                     Transport,
                                     Opts], []).    
 
+msg(Client, Msg) ->
+    gen_server:cast(Client, {msg, Msg}).
+
 %%%===================================================================
 
 %% @private
@@ -46,6 +49,10 @@ handle_call(_Request, _From, State) ->
     {reply, Reply, State}.
 
 %% @private
+handle_cast({msg, M}, #state { socket = Sock,
+                               synchronized = {yes, _} } = State) ->
+    out(Sock, pony_protocol:render(M)),
+    {noreply, State};
 handle_cast(_Msg, State) ->
     {noreply, State}.
 

@@ -1,6 +1,7 @@
 -module(pony_protocol).
 -export([parse/1]).
 -export([numeric/1]).
+-export([render/1]).
 
 command_to_atom(X) when is_binary(X) ->
     command_to_atom(binary_to_list(X));
@@ -282,3 +283,6 @@ numeric(N) when is_atom(N) ->
         'RPL_RSACHALLENGE2'     -> 740;
         'RPL_ENDOFRSACHALLENGE2'-> 741
     end.
+
+render(_X) ->
+    "todo".
