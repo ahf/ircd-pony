@@ -14,6 +14,7 @@
 -define(SERVER, ?MODULE). 
 
 -record(state, { socket, listener,
+                 cont = <<>> :: binary(),
                  synchronized = no :: 'no' | {'yes', string()}
                }).
 
@@ -35,9 +36,9 @@ start_link(ListenerPid, Socket, Transport, Opts) ->
 
 %% @private
 init([ListenerPid, Socket, Transport, _Opts]) ->
-    Transport:setopts(Socket, [raw, binary]),
     {ok, #state{ listener = ListenerPid,
                  socket = {Transport, Socket},
+                 cont = <<>>,
                  synchronized = no }, 0}. %% Note immediate timeout
 
 %% @private
@@ -50,6 +51,19 @@ handle_cast(_Msg, State) ->
     {noreply, State}.
 
 %% @private
+handle_info({tcp, Socket, Chunk},
+            #state { socket = {_, Socket},
+                     synchronized = {yes, _},
+                     cont = Cont } = State) ->
+    case process_stream_chunk(Chunk, Cont) of
+        {ok, NewCont} ->
+            {noreply, State#state { cont = NewCont }};
+        {msgs, Msgs, NewCont} ->
+            {noreply,
+             lists:foldl(fun handle_message/2,
+                         State#state { cont = NewCont },
+                         Msgs)}
+    end;
 handle_info(timeout, #state { synchronized = no,
                               listener = Listener,
                               socket = Socket } = State) ->
@@ -76,6 +90,10 @@ code_change(_OldVsn, State, _Extra) ->
 
 ack({Transport, Socket}) ->
     Transport:setopts(Socket, [{active, once}]).
+
+handle_message(_M, State) ->
+    %% Ignore for now
+    State.
 
 %% @doc Synchronize the socket
 sync(Sock) ->
