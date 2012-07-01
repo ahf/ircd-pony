@@ -1,4 +1,4 @@
--module(ircd_pony_hostmask).
+-module(pony_hostmask).
 -export([parse/1]).
 
 parse_nickname_hostname([NicknameAndUsername, Hostname]) ->

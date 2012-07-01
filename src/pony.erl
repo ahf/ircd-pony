@@ -1,12 +1,11 @@
--module(ircd_pony).
-
+-module(pony).
 
 -export([start/0, me/0]).
 
 start() ->
-    application:load(ircd_pony_core),
+    application:load(pony_core),
     [ ensure_started(A) || A <- dependent_apps() ],
-    application:start(ircd_pony_core).
+    application:start(pony_core).
 
 %% @todo Raise this to the configuration file
 me() ->
@@ -20,6 +19,6 @@ ensure_started(App) ->
     end.
 
 dependent_apps() ->
-    {ok, Apps} = application:get_key(ircd_pony_core, applications),
+    {ok, Apps} = application:get_key(pony_core, applications),
     Apps -- [kernel, stdlib].
 

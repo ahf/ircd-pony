@@ -1,4 +1,4 @@
--module(ircd_pony_client).
+-module(pony_client).
 
 -behaviour(gen_server).
 
@@ -80,7 +80,7 @@ ack({Transport, Socket}) ->
 %% @doc Synchronize the socket
 sync(Sock) ->
     out(Sock, "NOTICE AUTH :*** Processing connection to ~s ...",
-        [ircd_pony:me()]),
+        [pony:me()]),
     out(Sock, "NOTICE AUTH :*** Looking up your hostname ..."),
     {ok, Hostname} = lookup_hostname(Sock),
     out(Sock, "NOTICE AUTH :*** Found your hostname (~s) ...", [Hostname]),

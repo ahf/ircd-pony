@@ -1,5 +1,5 @@
 
--module(ircd_pony_core_sup).
+-module(pony_core_sup).
 
 -behaviour(supervisor).
 

@@ -1,4 +1,4 @@
-{application, ircd_pony_core,
+{application, pony_core,
  [
   {description, "An experimental IRCd for Erlang"},
   {vsn, "0.1"},
@@ -8,6 +8,6 @@
                   stdlib,
                   ranch
                  ]},
-  {mod, { ircd_pony_core_app, []}},
+  {mod, { pony_core_app, []}},
   {env, []}
  ]}.

@@ -1,4 +1,4 @@
--module(ircd_pony_protocol).
+-module(pony_protocol).
 -export([parse/1]).
 -export([numeric/1]).
 
