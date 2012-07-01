@@ -136,6 +136,6 @@ process_stream_chunk(Chunk, Cont, Msgs) ->
     end.
 
 return_messages([], Data) -> {ok, Data};
-return_messages(Msgs, Data) -> {msg, lists:reverse(Msgs), Data}.
+return_messages(Msgs, Data) -> {msgs, lists:reverse(Msgs), Data}.
 
 
