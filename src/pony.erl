@@ -9,7 +9,7 @@ start() ->
 
 %% @todo Raise this to the configuration file
 me() ->
-    {ok, N} = application:get_env(pony, hostname),
+    {ok, N} = application:get_env(pony, host),
     N.
 
 %% ----------------------------------------------------------------------
