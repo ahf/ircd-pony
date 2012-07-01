@@ -25,12 +25,11 @@
 %% @doc
 %% Starts the server
 %% @end
-%%--------------------------------------------------------------------
 start_link(ListenerPid, Socket, Transport, Opts) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [ListenerPid,
-                                                      Socket,
-                                                      Transport,
-                                                      Opts], []).    
+    gen_server:start_link(?MODULE, [ListenerPid,
+                                    Socket,
+                                    Transport,
+                                    Opts], []).    
 
 %%%===================================================================
 
