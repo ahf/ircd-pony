@@ -11,7 +11,7 @@
 
 start(_StartType, _StartArgs) ->
     pony_core_sup:start_link(),
-    ranch:start_listener(pony, 100,
+    ranch:start_listener(pony, 10,
                          ranch_tcp, [{port, 6667}, raw, binary, {active, false}],
                          pony_client, []).
 
