@@ -44,7 +44,8 @@ init([ListenerPid, Socket, Transport, _Opts]) ->
                  synchronized = no }, 0}. %% Note immediate timeout
 
 %% @private
-handle_call(_Request, _From, State) ->
+handle_call(Request, _From, State) ->
+    lager:debug("Unknown request in call: ~p", [Request]),
     Reply = ok,
     {reply, Reply, State}.
 
@@ -53,7 +54,8 @@ handle_cast({msg, M}, #state { socket = Sock,
                                synchronized = {yes, _} } = State) ->
     out(Sock, pony_protocol:render(M)),
     {noreply, State};
-handle_cast(_Msg, State) ->
+handle_cast(Msg, State) ->
+    lager:debug("Unknown message in cast: ~p", [Msg]),
     {noreply, State}.
 
 %% @private
