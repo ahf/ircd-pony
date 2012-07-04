@@ -137,7 +137,13 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
             send_numeric('ERR_NONICKNAMEGIVEN', [pony:me(), CurNick]),
             State;
         {<<>>, nick, [NickName]} ->
-            State#state { nickname = NickName };
+            case pony_nick_srv:register(NickName) of
+                ok ->
+                    State#state { nickname = NickName };
+                nick_in_use ->
+                    send_numeric('ERR_ERRONEUSNICKNAME', [pony:me(), CurNick]),
+                    State
+            end;
         {<<>>, user, L} when is_list(L), length(L) < 4 ->
             send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "USER"]),
             State;
