@@ -10,10 +10,12 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    pony_core_sup:start_link(),
+    {ok, Pid} = pony_core_sup:start_link(),
     ranch:start_listener(pony, 10,
                          ranch_tcp, [{port, 6667}, raw, binary, {active, false}],
-                         pony_client, []).
+                         pony_client, []),
+    {ok, Pid}.
 
 stop(_State) ->
+    ranch:stop_listener(pony),
     ok.
