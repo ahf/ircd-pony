@@ -57,12 +57,10 @@ handle_call(Request, _From, State) ->
 
 %% @private
 handle_cast({numeric, Numeric, Args},
-            #state { socket = Sock,
-                     synchronized = {yes, _} } = State) ->
+            #state { socket = Sock } = State) ->
     out(Sock, pony_protocol:render_numeric(Numeric, Args)),
     {noreply, State};
-handle_cast({msg, M}, #state { socket = Sock,
-                               synchronized = {yes, _} } = State) ->
+handle_cast({msg, M}, #state { socket = Sock } = State) ->
     out(Sock, pony_protocol:render(M)),
     {noreply, State};
 handle_cast(Msg, State) ->
@@ -75,7 +73,6 @@ handle_info({tcp_closed, S},
     {stop, normal, State};
 handle_info({tcp, S, Chunk},
             #state { socket = {_, S} = Socket,
-                     synchronized = {yes, _},
                      cont = Cont } = State) ->
     ack(Socket),
     case process_stream_chunk(Chunk, Cont) of
@@ -89,18 +86,14 @@ handle_info({tcp, S, Chunk},
     end;
 handle_info(timeout, #state { synchronized = no,
                               listener = Listener,
-                              socket = Socket,
-                              nickname = Nick } = State) ->
-    {ok, Hostname} = sync(Socket),
+                              socket = Socket } = State) ->
+    ranch:accept_ack(Listener),
+    {ok, _Hostname} = sync(Socket),
     %% We only let ranch continue when this client has been accepted
     %% This effectively throttles the inbound connection so we at most
     %% process a limited amount of new connections
-    ranch:accept_ack(Listener),
     ack(Socket),
-    send_numeric('RPL_WELCOME', [pony:me(), Nick, pony:description(), Nick]),
-    send_numeric('RPL_YOURHOST', [pony:me(), Nick, pony:server(), pony:version()]),
-    %% this.SendMotd()
-    {noreply, State#state { synchronized = {yes, Hostname} }};
+    {noreply, State };
 handle_info(Info, State) ->
     lager:warning("Unknown message received: ~p State: ~p", [Info, State]),
     {noreply, State}.
@@ -134,26 +127,21 @@ handle_message(M, State) ->
     end.
 
 
+handle_message(Prefix, Command, Args, #state { synchronized = no } = State) ->
+    case handle_nick_user(Prefix, Command, Args, State) of
+        #state { nickname = Nick, username = User} = NewState
+          when Nick /= <<"*">>, User /= <<"*">> ->
+            send_numeric('RPL_WELCOME',
+                         [pony:me(), Nick, pony:description(), Nick]),
+            send_numeric('RPL_YOURHOST',
+                         [pony:me(), Nick, pony:server(), pony:version()]),
+            %% this.SendMotd()
+            NewState#state { synchronized = yes };
+        NewState ->
+            NewState
+    end;
 handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
     case {Prefix, Command, Args} of
-        {<<>>, nick, []} ->
-            send_numeric('ERR_NONICKNAMEGIVEN', [pony:me(), CurNick]),
-            State;
-        {<<>>, nick, [NickName]} ->
-            case pony_nick_srv:swap(CurNick, NickName) of
-                ok ->
-                    gproc:add_local_name({nick, NickName}),
-                    State#state { nickname = NickName };
-                nick_in_use ->
-                    send_numeric('ERR_ERRONEUSNICKNAME', [pony:me(), CurNick]),
-                    State
-            end;
-        {<<>>, user, L} when is_list(L), length(L) < 4 ->
-            send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "USER"]),
-            State;
-        {<<>>, user, [Username, _, _, RealName]} ->
-            State#state { username = <<"~", Username/binary>>,
-                          realname = RealName };
         {<<>>, ping, []} ->
             send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "PING"]),
             State;
@@ -178,11 +166,34 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
         {<<>>, quit, [_Message]} ->
             State;
         _ ->
-            lager:debug("Unhandled message: ~p", [[{prefix, Prefix},
-                                                   {command, Command},
-                                                   {args, Args}]]),
-            State
+            handle_nick_user(Prefix, Command, Args, State)
     end.
+
+handle_nick_user(<<>>, nick, [], #state { nickname = CurNick } = State) ->
+    send_numeric('ERR_NONICKNAMEGIVEN', [pony:me(), CurNick]),
+    State;
+handle_nick_user(<<>>, nick, [NickName], #state { nickname = CurNick } = State) ->
+    case pony_nick_srv:swap(CurNick, NickName) of
+        ok ->
+            gproc:add_local_name({nick, NickName}),
+            State#state { nickname = NickName };
+        nick_in_use ->
+            send_numeric('ERR_ERRONEUSNICKNAME', [pony:me(), CurNick]),
+            State
+    end;
+handle_nick_user(<<>>, user, L, #state { nickname = CurNick} = State)
+  when is_list(L), length(L) < 4 ->
+    send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "USER"]),
+    State;
+handle_nick_user(<<>>, user, [Username, _, _, RealName], State) ->
+    State#state { username = <<"~", Username/binary>>,
+                  realname = RealName };
+handle_nick_user(Prefix, Command, Args, State) ->
+    lager:debug("Unhandled message: ~p", [[{prefix, Prefix},
+                                           {command, Command},
+                                           {args, Args}]]),
+    State.
+    
 
 %% @doc Synchronize the socket
 sync(Sock) ->
