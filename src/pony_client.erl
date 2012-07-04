@@ -137,7 +137,7 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
             send_numeric('ERR_NONICKNAMEGIVEN', [pony:me(), CurNick]),
             State;
         {<<>>, nick, [NickName]} ->
-            case pony_nick_srv:register(NickName) of
+            case pony_nick_srv:swap(CurNick, NickName) of
                 ok ->
                     gproc:add_local_name({nick, NickName}),
                     State#state { nickname = NickName };

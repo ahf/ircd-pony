@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, register/1, unregister/1]).
+-export([start_link/0, swap/2, unregister/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -30,7 +30,7 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
-register(Name) ->
+swap(<<"*">>, Name) ->
     case ets:lookup(?TAB, Name) of
         [] ->
             gen_server:call(?SERVER, {register, Name});
