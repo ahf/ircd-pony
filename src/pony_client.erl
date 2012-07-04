@@ -89,9 +89,6 @@ handle_info(timeout, #state { synchronized = no,
                               socket = Socket } = State) ->
     ranch:accept_ack(Listener),
     {ok, _Hostname} = sync(Socket),
-    %% We only let ranch continue when this client has been accepted
-    %% This effectively throttles the inbound connection so we at most
-    %% process a limited amount of new connections
     ack(Socket),
     {noreply, State };
 handle_info(Info, State) ->
@@ -202,7 +199,6 @@ sync(Sock) ->
     out(Sock, "NOTICE AUTH :*** Looking up your hostname ..."),
     {ok, Hostname} = lookup_hostname(Sock),
     out(Sock, "NOTICE AUTH :*** Found your hostname (~s) ...", [Hostname]),
-    %% @todo Unregistered proto handling goes here
     {ok, Hostname}.
 
 out({Transport, Socket}, Data) ->
