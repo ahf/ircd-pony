@@ -10,6 +10,7 @@
                   syntax_tools,
                   sasl,
                   lager,
+                  gproc,
                   ranch
                  ]},
   {mod, { pony_core_app, []}},

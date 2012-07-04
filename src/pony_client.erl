@@ -139,6 +139,7 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
         {<<>>, nick, [NickName]} ->
             case pony_nick_srv:register(NickName) of
                 ok ->
+                    gproc:add_local_name({nick, NickName}),
                     State#state { nickname = NickName };
                 nick_in_use ->
                     send_numeric('ERR_ERRONEUSNICKNAME', [pony:me(), CurNick]),
