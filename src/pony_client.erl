@@ -157,6 +157,8 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
         {<<>>, ping, [Server]} ->
             respond({pong, Server}),
             State;
+        {<<>>, quit, [_Message]} ->
+            State;
         _ ->
             lager:debug("Unhandled message: ~p", [[{prefix, Prefix},
                                                    {command, Command},
