@@ -298,5 +298,6 @@ render_numeric('RPL_WELCOME', Args) ->
 render_numeric('RPL_YOURHOST', Args) ->
     io_lib:format(":~s 002 ~s :Your host is ~s, running version ~s", Args).
 
-render(_X) ->
-    "todo".
+render({pong, Server}) ->
+    io_lib:format("PONG :~s", [Server]).
+
