@@ -5,7 +5,7 @@
 -include_lib("kernel/include/inet.hrl").
 
 %% API
--export([start_link/4, msg/2]).
+-export([start_link/4, msg/2, numeric/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -35,7 +35,10 @@ start_link(ListenerPid, Socket, Transport, Opts) ->
                                     Opts], []).    
 
 msg(Client, Msg) ->
-    gen_server:cast(Client, Msg).
+    gen_server:cast(Client, {msg, Msg}).
+
+numeric(Client, Numeric, Args) ->
+    gen_server:cast(Client, {numeric, Numeric, Args}).
 
 %%%===================================================================
 
@@ -53,10 +56,10 @@ handle_call(Request, _From, State) ->
     {reply, Reply, State}.
 
 %% @private
-handle_cast({numeric, Numeric, Text},
+handle_cast({numeric, Numeric, Args},
             #state { socket = Sock,
                      synchronized = {yes, _} } = State) ->
-    out(Sock, pony_protocol:render_numeric(Numeric, Text)),
+    out(Sock, pony_protocol:render_numeric(Numeric, Args)),
     {noreply, State};
 handle_cast({msg, M}, #state { socket = Sock,
                                synchronized = {yes, _} } = State) ->
@@ -116,10 +119,10 @@ ack({Transport, Socket}) ->
     Transport:setopts(Socket, [{active, once}]).
 
 send_numeric(Numeric, Args) ->
-    msg(self(), {numeric, Numeric, Args}).
+    numeric(self(), Numeric, Args).
 
 respond(M) ->
-    msg(self(), {msg, M}).
+    msg(self(), M).
 
 handle_message(M, State) ->
     case pony_protocol:parse(M) of
@@ -157,6 +160,21 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
         {<<>>, ping, [Server]} ->
             respond({pong, Server}),
             State;
+        {<<>>, privmsg, []} ->
+            send_numeric('ERR_NORECIPIENT', [pony:me(), CurNick, "PRIVMSG"]),
+            State;
+        {<<>>, privmsg, [_Recipient]} ->
+            send_numeric('ERR_NOTEXTTOSEND', [pony:me(), CurNick, "PRIVMSG"]),
+            State;
+        {<<>>, privmsg, [Recipient, Text]} ->
+            PM = {privmsg, CurNick, Recipient, Text},
+            case gproc:lookup_local_name({nick, Recipient}) of
+                undefined ->
+                    State;
+                Pid when is_pid(Pid) ->
+                    pony_client:msg(Pid, PM),
+                    State
+            end;
         {<<>>, quit, [_Message]} ->
             State;
         _ ->
@@ -177,6 +195,7 @@ sync(Sock) ->
     {ok, Hostname}.
 
 out({Transport, Socket}, Data) ->
+    %% lager:debug("Sending: ~ts", [Data]),
     Transport:send(Socket, [Data, <<"\r\n">>]).
 
 out({Transport, Socket}, Format, Params) ->

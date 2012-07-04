@@ -30,6 +30,7 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
+swap(N, N) -> ok; % No-op swap
 swap(<<"*">>, Name) ->
     case ets:lookup(?TAB, Name) of
         [] ->
