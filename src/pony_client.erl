@@ -15,7 +15,10 @@
 
 -record(state, { socket, listener,
                  cont = <<>> :: binary(),
-                 synchronized = no :: 'no' | {'yes', string()}
+                 synchronized = no :: 'no' | {'yes', string()},
+                 username = <<"*">>,
+                 realname = <<"*">>,
+                 nickname = <<"*">>
                }).
 
 %%%===================================================================
@@ -83,16 +86,16 @@ handle_info({tcp, S, Chunk},
     end;
 handle_info(timeout, #state { synchronized = no,
                               listener = Listener,
-                              socket = Socket } = State) ->
+                              socket = Socket,
+                              nickname = Nick } = State) ->
     {ok, Hostname} = sync(Socket),
     %% We only let ranch continue when this client has been accepted
     %% This effectively throttles the inbound connection so we at most
     %% process a limited amount of new connections
     ranch:accept_ack(Listener),
     ack(Socket),
-    msg(self(), {numeric, 'RPL_WELCOME', [pony:me(), "*", pony:description(), "*"]}),
-    msg(self(), {numeric, 'RPL_YOURHOST', [pony:me(), "*",
-                                           pony:server(), pony:version()]}),
+    send_numeric('RPL_WELCOME', [pony:me(), Nick, pony:description(), Nick]),
+    send_numeric('RPL_YOURHOST', [pony:me(), Nick, pony:server(), pony:version()]),
     %% this.SendMotd()
     {noreply, State#state { synchronized = {yes, Hostname} }};
 handle_info(Info, State) ->
@@ -112,9 +115,47 @@ code_change(_OldVsn, State, _Extra) ->
 ack({Transport, Socket}) ->
     Transport:setopts(Socket, [{active, once}]).
 
+send_numeric(Numeric, Args) ->
+    msg(self(), {numeric, Numeric, Args}).
+
+respond(M) ->
+    msg(self(), {msg, M}).
+
 handle_message(M, State) ->
-    lager:debug("Incoming Message: ~s", [pony_protocol:stringify(M)]),
-    State.
+    case pony_protocol:parse(M) of
+        {ok, Prefix, Command, Args} ->
+            handle_message(Prefix, Command, Args, State);
+        {error, _} ->
+            %% Ignore errors for now
+            State
+    end.
+
+
+handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
+    case {Prefix, Command, Args} of
+        {<<>>, nick, []} ->
+            send_numeric('ERR_NONICKNAMEGIVEN', [pony:me(), CurNick]),
+            State;
+        {<<>>, nick, [NickName]} ->
+            State#state { nickname = NickName };
+        {<<>>, user, L} when is_list(L), length(L) < 4 ->
+            send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "USER"]),
+            State;
+        {<<>>, user, [Username, _, _, RealName]} ->
+            State#state { username = <<"~", Username/binary>>,
+                          realname = RealName };
+        {<<>>, ping, []} ->
+            send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "PING"]),
+            State;
+        {<<>>, ping, [Server]} ->
+            respond({pong, Server}),
+            State;
+        _ ->
+            lager:debug("Unhandled message: ~p", [[{prefix, Prefix},
+                                                   {command, Command},
+                                                   {args, Args}]]),
+            State
+    end.
 
 %% @doc Synchronize the socket
 sync(Sock) ->
