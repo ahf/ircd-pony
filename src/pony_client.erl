@@ -164,6 +164,14 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
             end;
         {<<>>, quit, [_Message]} ->
             State;
+        {<<>>, join, []} ->
+            send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "JOIN"]),
+            State;
+        {<<>>, join, [Channel]} ->
+            ok = pony_chan_srv:join(Channel),
+            enter_channel(Channel),
+            [msg(Pid, {join, CurNick, Channel}) || Pid <- channel_members(Channel)],
+            State;
         _ ->
             handle_nick_user(Prefix, Command, Args, State)
     end.
@@ -233,4 +241,8 @@ process_stream_chunk(Chunk, Cont, Msgs) ->
 return_messages([], Data) -> {ok, Data};
 return_messages(Msgs, Data) -> {msgs, lists:reverse(Msgs), Data}.
 
+enter_channel(Channel) ->
+    gproc:add_local_property(Channel, client).
 
+channel_members(Channel) ->
+    [Pid || {Pid, _} <- gproc:lookup_local_property(Channel)].
