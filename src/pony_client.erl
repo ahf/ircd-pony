@@ -18,7 +18,8 @@
                  synchronized = no :: 'no' | {'yes', string()},
                  username = <<"*">>,
                  realname = <<"*">>,
-                 nickname = <<"*">>
+                 nickname = <<"*">>,
+                 hostname = undefined
                }).
 
 %%%===================================================================
@@ -74,7 +75,7 @@ handle_info({tcp_closed, S},
 handle_info({tcp, S, Chunk},
             #state { socket = {_, S} = Socket,
                      cont = Cont } = State) ->
-    ack(Socket),
+    ack_socket(Socket),
     case process_stream_chunk(Chunk, Cont) of
         {ok, NewCont} ->
             {noreply, State#state { cont = NewCont }};
@@ -88,9 +89,9 @@ handle_info(timeout, #state { synchronized = no,
                               listener = Listener,
                               socket = Socket } = State) ->
     ranch:accept_ack(Listener),
-    {ok, _Hostname} = sync(Socket),
-    ack(Socket),
-    {noreply, State };
+    {ok, Hostname} = sync(Socket),
+    ack_socket(Socket),
+    {noreply, State#state { hostname = Hostname } };
 handle_info(Info, State) ->
     lager:warning("Unknown message received: ~p State: ~p", [Info, State]),
     {noreply, State}.
@@ -105,7 +106,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 %%%===================================================================
 
-ack({Transport, Socket}) ->
+ack_socket({Transport, Socket}) ->
     Transport:setopts(Socket, [{active, once}]).
 
 send_numeric(Numeric, Args) ->
@@ -119,6 +120,7 @@ handle_message(M, State) ->
         {ok, Prefix, Command, Args} ->
             handle_message(Prefix, Command, Args, State);
         {error, _} ->
+            lager:warning("Protocol parse error: ~p", [M]),
             %% Ignore errors for now
             State
     end.
