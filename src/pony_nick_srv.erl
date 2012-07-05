@@ -84,7 +84,7 @@ handle_info({'DOWN', _Ref, process, Pid, _Reason}, State) ->
     [{Pid, Name}] = ets:lookup(?TAB, Pid),
     ets:delete(?TAB, Name),
     ets:delete(?TAB, Pid),
-    pony_chan_srv:quits(Pid),
+    pony_chan_srv:quits(Pid, Name),
     {noreply, State};
 handle_info(_Info, State) ->
     {noreply, State}.

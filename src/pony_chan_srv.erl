@@ -13,7 +13,7 @@
 -export([start_link/0,
          join/1,
          part/1,
-         quits/1]).
+         quits/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -41,8 +41,8 @@ join(ChanName) ->
 part(ChanName) ->
     gen_server:call(?SERVER, {part, ChanName}).
 
-quits(Pid) ->
-    gen_server:cast(?SERVER, {quits, Pid}).
+quits(Pid, Name) ->
+    gen_server:cast(?SERVER, {quits, Pid, Name}).
 
 channel_members(Channel) ->
     [Pid || {Pid, _} <- gproc:lookup_local_properties(Channel)].
