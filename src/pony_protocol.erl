@@ -298,6 +298,8 @@ render_numeric('RPL_WELCOME', Args) ->
 render_numeric('RPL_YOURHOST', Args) ->
     io_lib:format(":~s 002 ~s :Your host is ~s, running version ~s", Args).
 
+render({part, Source, Channel}) ->
+    io_lib:format(":~s PART :~s", [Source, Channel]);
 render({join, Source, Channel}) ->
     io_lib:format(":~s JOIN :~s", [Source, Channel]);
 render({privmsg, Source, Target, Text}) ->
