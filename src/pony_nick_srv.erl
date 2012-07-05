@@ -12,10 +12,13 @@
 
 %% API
 -export([start_link/0, swap/2, unregister/1]).
+-export([lookup_nick/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
+
+
 
 -define(TAB, pony_nick_registry).
 -define(SERVER, ?MODULE). 
@@ -41,6 +44,9 @@ swap(<<"*">>, Name) ->
 
 unregister(Name) ->
     gen_server:call(?SERVER, {unregister, Name}).
+
+lookup_nick(Recipient) ->
+    gproc:lookup_local_name({nick, Recipient}).
 
 %%%===================================================================
 
@@ -98,3 +104,4 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 %%%===================================================================
+

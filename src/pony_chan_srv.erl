@@ -13,13 +13,17 @@
 -export([start_link/0,
          join/1,
          part/1,
-         quits/2]).
+         quits/2
+        ]).
+
+-export([channel_members/1,
+         part_channel/1,
+         join_channel/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--export([channel_members/1]).
 
 -define(TAB, pony_channel_map).
 -define(SERVER, ?MODULE). 
@@ -45,7 +49,13 @@ quits(Pid, Name) ->
     gen_server:cast(?SERVER, {quits, Pid, Name}).
 
 channel_members(Channel) ->
-    [Pid || {Pid, _} <- gproc:lookup_local_properties(Channel)].
+    [Pid || {Pid, _} <- gproc:lookup_local_properties({channel, Channel})].
+
+part_channel(Channel) ->
+    gproc:unreg({p, l, {channel, Channel}}).
+
+join_channel(Channel) ->
+    gproc:add_local_property({channel, Channel}, client).
 
 %%%===================================================================
 
@@ -94,5 +104,3 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 %%%===================================================================
-
-

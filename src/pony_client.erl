@@ -155,8 +155,14 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
             State;
         {<<>>, privmsg, [Recipient, Text]} ->
             PM = {privmsg, CurNick, Recipient, Text},
-            case gproc:lookup_local_name({nick, Recipient}) of
+            case pony_nick_srv:lookup_nick(Recipient) of
                 undefined ->
+                    case pony_chan_srv:channel_members(Recipient) of
+                        [] ->
+                            State;
+                        Members when is_list(Members) ->
+                            [pony_client:msg(Pid, PM) || Pid <- Members -- [self()] ]
+                    end,
                     State;
                 Pid when is_pid(Pid) ->
                     pony_client:msg(Pid, PM),
@@ -175,16 +181,18 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
             State;
         {<<>>, join, [Channel]} ->
             ok = pony_chan_srv:join(Channel),
-            join_channel(Channel),
-            [msg(Pid, {join, CurNick, Channel}) || Pid <- pony_chan_srv:channel_members(Channel)],
+            pony_chan_srv:join_channel(Channel),
+            [msg(Pid, {join, CurNick, Channel})
+             || Pid <- pony_chan_srv:channel_members(Channel)],
             State;
         {<<>>, part, []} ->
             send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "PART"]),
             State;
         {<<>>, part, [Channel]} ->
             ok = pony_chan_srv:part(Channel),
-            [msg(Pid, {part, CurNick, Channel}) || Pid <- pony_chan_srv:channel_members(Channel)],
-            part_channel(Channel),
+            [msg(Pid, {part, CurNick, Channel})
+             || Pid <- pony_chan_srv:channel_members(Channel)],
+            pony_chan_srv:part_channel(Channel),
             State;
         _ ->
             handle_nick_user(Prefix, Command, Args, State)
@@ -254,9 +262,3 @@ process_stream_chunk(Chunk, Cont, Msgs) ->
 
 return_messages([], Data) -> {ok, Data};
 return_messages(Msgs, Data) -> {msgs, lists:reverse(Msgs), Data}.
-
-join_channel(Channel) ->
-    gproc:add_local_property(Channel, client).
-
-part_channel(Channel) ->
-    gproc:unreg({p, l, Channel}).
