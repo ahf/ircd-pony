@@ -175,16 +175,16 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
             State;
         {<<>>, join, [Channel]} ->
             ok = pony_chan_srv:join(Channel),
-            [msg(Pid, {join, CurNick, Channel}) || Pid <- pony_chan_srv:channel_members(Channel)],
             join_channel(Channel),
+            [msg(Pid, {join, CurNick, Channel}) || Pid <- pony_chan_srv:channel_members(Channel)],
             State;
         {<<>>, part, []} ->
             send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "PART"]),
             State;
         {<<>>, part, [Channel]} ->
             ok = pony_chan_srv:part(Channel),
-            part_channel(Channel),
             [msg(Pid, {part, CurNick, Channel}) || Pid <- pony_chan_srv:channel_members(Channel)],
+            part_channel(Channel),
             State;
         _ ->
             handle_nick_user(Prefix, Command, Args, State)
