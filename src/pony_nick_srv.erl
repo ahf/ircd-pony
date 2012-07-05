@@ -54,8 +54,9 @@ init([]) ->
 handle_call({register, Name}, {Pid, _Tag}, State) ->
     case ets:lookup(?TAB, Name) of
         [] ->
-            Ref = erlang:monitor(process, Pid),
-            ets:insert(?TAB, {Name, Ref}),
+            _Ref = erlang:monitor(process, Pid),
+            ets:insert(?TAB, {Name, Pid}),
+            ets:insert(?TAB, {Pid, Name}),
             {reply, ok, State};
         [_|_] ->
             {reply, nick_in_use, State}
@@ -79,9 +80,10 @@ handle_cast(_Msg, State) ->
     {noreply, State}.
 
 %% @private
-handle_info({'DOWN', Ref, process, _Pid, _Reason}, State) ->
-    [{Name, Ref}] = ets:match_object(?TAB, {'_', Ref}),
+handle_info({'DOWN', _Ref, process, Pid, _Reason}, State) ->
+    [{Pid, Name}] = ets:lookup(?TAB, Pid),
     ets:delete(?TAB, Name),
+    ets:delete(?TAB, Pid),
     {noreply, State};
 handle_info(_Info, State) ->
     {noreply, State}.
