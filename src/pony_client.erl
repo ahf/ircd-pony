@@ -166,31 +166,33 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
             handle_nick_user(Prefix, Command, Args, State)
     end.
 
-handle_nick_user(<<>>, nick, [], #state { nickname = CurNick } = State) ->
-    send_numeric('ERR_NONICKNAMEGIVEN', [pony:me(), CurNick]),
-    State;
-handle_nick_user(<<>>, nick, [NickName], #state { nickname = CurNick } = State) ->
-    case pony_nick_srv:swap(CurNick, NickName) of
-        ok ->
-            gproc:add_local_name({nick, NickName}),
-            State#state { nickname = NickName };
-        nick_in_use ->
-            send_numeric('ERR_ERRONEUSNICKNAME', [pony:me(), CurNick]),
+handle_nick_user(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
+    case {Prefix, Command, Args} of
+        {<<>>, nick, []} ->
+            send_numeric('ERR_NONICKNAMEGIVEN', [pony:me(), CurNick]),
+            State;
+        {<<>>, nick, [NickName]} ->
+            case pony_nick_srv:swap(CurNick, NickName) of
+                ok ->
+                    gproc:add_local_name({nick, NickName}),
+                    State#state { nickname = NickName };
+                nick_in_use ->
+                    send_numeric('ERR_ERRONEUSNICKNAME', [pony:me(), CurNick]),
+                    State
+            end;
+        {<<>>, user, L}
+          when is_list(L), length(L) < 4 ->
+            send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "USER"]),
+            State;
+        {<<>>, user, [Username, _, _, RealName]} ->
+            State#state { username = <<"~", Username/binary>>,
+                          realname = RealName };
+        {Prefix, Command, Args} ->
+            lager:debug("Unhandled message: ~p", [[{prefix, Prefix},
+                                                   {command, Command},
+                                                   {args, Args}]]),
             State
-    end;
-handle_nick_user(<<>>, user, L, #state { nickname = CurNick} = State)
-  when is_list(L), length(L) < 4 ->
-    send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "USER"]),
-    State;
-handle_nick_user(<<>>, user, [Username, _, _, RealName], State) ->
-    State#state { username = <<"~", Username/binary>>,
-                  realname = RealName };
-handle_nick_user(Prefix, Command, Args, State) ->
-    lager:debug("Unhandled message: ~p", [[{prefix, Prefix},
-                                           {command, Command},
-                                           {args, Args}]]),
-    State.
-    
+    end.
 
 %% @doc Synchronize the socket
 sync(Sock) ->
