@@ -151,6 +151,9 @@ handle_message(Prefix, Command, Args, #state { synchronized = no } = State) ->
             NewState
     end;
 handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
+    lager:debug("Got Incoming Message: ~p", [[{prefix, Prefix},
+                                              {command, Command},
+                                              {args, Args}]]),
     case {Prefix, Command, Args} of
         {<<>>, ping, []} ->
             send_numeric('ERR_NEEDMOREPARAMS', [CurNick, ping]),
@@ -185,7 +188,15 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
             send_numeric('ERR_NEEDMOREPARAMS', [CurNick, topic]),
             State;
         {<<>>, topic, [Channel]} ->
-            send_numeric('RPL_NOTOPIC', [CurNick, Channel]),
+            case pony_chan_srv:lookup_topic(Channel) of
+                {topic, T} ->
+                    send_numeric('RPL_TOPIC', [CurNick, Channel, T]);
+                no_topic ->
+                    send_numeric('RPL_NOTOPIC', [CurNick, Channel])
+            end,
+            State;
+        {<<>>, topic, [Channel, Text]} ->
+            pony_chan_srv:set_topic(Channel, Text),
             State;
         {<<>>, join, []} ->
             send_numeric('ERR_NEEDMOREPARAMS', [CurNick, join]),

@@ -17,6 +17,8 @@
         ]).
 
 -export([channel_members/1,
+         set_topic/2,
+         lookup_topic/1,
          part_channel/1,
          join_channel/1]).
 
@@ -26,7 +28,12 @@
 
 
 -define(TAB, pony_channel_map).
+-define(CHAN_TAB, pony_channel_meta).
 -define(SERVER, ?MODULE). 
+
+-record(channel,
+        { name,
+          topic }).
 
 -record(state, {}).
 
@@ -57,19 +64,44 @@ part_channel(Channel) ->
 join_channel(Channel) ->
     gproc:add_local_property({channel, Channel}, client).
 
+set_topic(Channel, Topic) ->
+    [Chan] = ets:lookup(?CHAN_TAB, Channel),
+    ets:insert(?CHAN_TAB, Chan#channel{ topic = Topic }).
+
+lookup_topic(Channel) ->
+    [#channel { topic = T}] = ets:lookup(?CHAN_TAB, Channel),
+    case T of
+        undefined -> no_topic;
+        T -> {topic, T}
+    end.
+        
 %%%===================================================================
 
 %% @private
 init([]) ->
+    ets:new(?CHAN_TAB, [named_table, public, set, {keypos, #channel.name}]),
     ets:new(?TAB, [named_table, protected, bag]),
     {ok, #state{}}.
 
 %% @private
 handle_call({join, ChanName}, {Pid, _Tag}, State) ->
+    case ets:lookup(?CHAN_TAB, ChanName) of
+        [] ->
+            ets:insert(?CHAN_TAB, #channel { name = ChanName,
+                                             topic = undefined });
+        [_] ->
+            ok
+    end,
     ets:insert(?TAB, {Pid, ChanName}),
     {reply, ok, State};
 handle_call({part, ChanName}, {Pid, _Tag}, State) ->
     ets:delete(?TAB, {Pid, ChanName}),
+    case channel_members(ChanName) of
+        [] ->
+            ets:delete(?CHAN_TAB, ChanName);
+        [_|_] ->
+            ok
+    end,
     {reply, ok, State};
 handle_call(Request, _From, State) ->
     lager:warning("Unknown Request: ~p", [Request]),

@@ -88,6 +88,9 @@ render_numeric('RPL_YOURHOST', [Nick]) ->
 render_numeric('RPL_NOTOPIC', [Nick, Channel]) ->
     io_lib:format(":~s 331 ~s ~s :No topic is set.",
                   [pony:me(), Nick, Channel]);
+render_numeric('RPL_TOPIC', [Nick, Chan, Topic]) ->
+    io_lib:format(":~s 332 ~s ~s :~s",
+                  [pony:me(), Nick, Chan, Topic]);
 render_numeric('ERR_ERRONEUSNICKNAME', [OldNick, Nick]) ->
     io_lib:format(":~s 432 ~s ~s :Erroneous Nickname",
                   [pony:me(), OldNick, Nick]);
