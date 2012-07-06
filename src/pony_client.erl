@@ -61,6 +61,10 @@ handle_cast({numeric, Numeric, Args},
             #state { socket = Sock } = State) ->
     out(Sock, pony_protocol:render_numeric(Numeric, Args)),
     {noreply, State};
+handle_cast({msg, {privmsg, Nick, _Target, _Text}},
+            #state { nickname = Nick } = State) ->
+    %% Quaff messages to self
+    {noreply, State};
 handle_cast({msg, M}, #state { socket = Sock } = State) ->
     out(Sock, pony_protocol:render(M)),
     {noreply, State};
@@ -170,7 +174,7 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
                         [] ->
                             State;
                         Members when is_list(Members) ->
-                            [pony_client:msg(Pid, PM) || Pid <- Members -- [self()] ]
+                            [pony_client:msg(Pid, PM) || Pid <- Members]
                     end,
                     State;
                 Pid when is_pid(Pid) ->
