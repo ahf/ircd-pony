@@ -79,10 +79,12 @@ stringify(X) ->
 stringify(P, C, A) ->
     io_lib:format("~p~n", [[{prefix, P}, {command, C}, {args, A}]]).
 
-render_numeric('RPL_WELCOME', Args) ->
-    io_lib:format(":~s 001 ~s :Welcome to the ~s Internet Relay Chat Network ~s", Args);
-render_numeric('RPL_YOURHOST', Args) ->
-    io_lib:format(":~s 002 ~s :Your host is ~s, running version ~s", Args);
+render_numeric('RPL_WELCOME', [Nick]) ->
+    io_lib:format(":~s 001 ~s :Welcome to the ~s Internet Relay Chat Network ~s",
+                 [pony:me(), Nick, pony:description(), Nick]);
+render_numeric('RPL_YOURHOST', [Nick]) ->
+    io_lib:format(":~s 002 ~s :Your host is ~s, running version ~s",
+                 [pony:me(), Nick, pony:server(), pony:version()]);
 render_numeric('RPL_NOTOPIC', [Nick, Channel]) ->
     io_lib:format(":~s 331 ~s ~s :No topic is set.",
                   [pony:me(), Nick, Channel]);

@@ -143,10 +143,8 @@ handle_message(Prefix, Command, Args, #state { synchronized = no } = State) ->
     case handle_nick_user(Prefix, Command, Args, State) of
         #state { nickname = Nick, username = User} = NewState
           when Nick /= <<"*">>, User /= <<"*">> ->
-            send_numeric('RPL_WELCOME',
-                         [pony:me(), Nick, pony:description(), Nick]),
-            send_numeric('RPL_YOURHOST',
-                         [pony:me(), Nick, pony:server(), pony:version()]),
+            send_numeric('RPL_WELCOME', [Nick]),
+            send_numeric('RPL_YOURHOST', [Nick]),
             %% this.SendMotd()
             NewState#state { synchronized = yes };
         NewState ->
