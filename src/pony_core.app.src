@@ -11,6 +11,9 @@
                   sasl,
                   lager,
                   gproc,
+                  crypto,
+                  ssl,
+                  public_key,
                   ranch
                  ]},
   {mod, { pony_core_app, []}},
