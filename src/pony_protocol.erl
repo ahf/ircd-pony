@@ -33,11 +33,12 @@ command_to_atom(X) when is_list(X) ->
         _ -> {unknown, X}
     end.
 
+atom_to_command(join) -> "JOIN";
+atom_to_command(part) -> "PART";
 atom_to_command(ping) -> "PING";
 atom_to_command(privmsg) -> "PRIVMSG";
 atom_to_command(topic) -> "TOPIC";
-atom_to_command(join) -> "JOIN";
-atom_to_command(part) -> "PART".
+atom_to_command(user) -> "USER".
 
 parse_argument(<<$:, X/binary>>) ->
     [X];

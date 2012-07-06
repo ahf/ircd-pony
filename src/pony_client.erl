@@ -227,7 +227,7 @@ handle_nick_user(Prefix, Command, Args, #state { nickname = CurNick } = State) -
             end;
         {<<>>, user, L}
           when is_list(L), length(L) < 4 ->
-            send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "USER"]),
+            send_numeric('ERR_NEEDMOREPARAMS', [CurNick, user]),
             State;
         {<<>>, user, [Username, _, _, RealName]} ->
             State#state { username = <<"~", Username/binary>>,
