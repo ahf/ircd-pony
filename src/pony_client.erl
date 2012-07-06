@@ -72,19 +72,15 @@ handle_cast(Msg, State) ->
 handle_info({tcp_closed, S},
             #state { socket = {_, S} } = State) ->
     {stop, normal, State};
+handle_info({ssl_closed, S},
+            #state { socket = {_, S} } = State) ->
+    {stop, normal, State};
 handle_info({tcp, S, Chunk},
-            #state { socket = {_, S} = Socket,
-                     cont = Cont } = State) ->
-    ack_socket(Socket),
-    case process_stream_chunk(Chunk, Cont) of
-        {ok, NewCont} ->
-            {noreply, State#state { cont = NewCont }};
-        {msgs, Msgs, NewCont} ->
-            {noreply,
-             lists:foldl(fun handle_message/2,
-                         State#state { cont = NewCont },
-                         Msgs)}
-    end;
+            #state { socket = {_, S}} = State) ->
+    handle_transport_packet(Chunk, State);
+handle_info({ssl, S, Chunk},
+            #state { socket = {_, S}} = State) ->
+    handle_transport_packet(Chunk, State);
 handle_info(timeout, #state { synchronized = no,
                               listener = Listener,
                               socket = Socket } = State) ->
@@ -105,6 +101,19 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 %%%===================================================================
+handle_transport_packet(Chunk, #state { cont = Cont,
+                                        socket = Socket } = State) ->
+    ack_socket(Socket),
+    case process_stream_chunk(Chunk, Cont) of
+        {ok, NewCont} ->
+            {noreply, State#state { cont = NewCont }};
+        {msgs, Msgs, NewCont} ->
+            {noreply,
+             lists:foldl(fun handle_message/2,
+                         State#state { cont = NewCont },
+                         Msgs)}
+    end.
+
 
 ack_socket({Transport, Socket}) ->
     Transport:setopts(Socket, [{active, once}]).
@@ -242,9 +251,9 @@ out({Transport, Socket}, Data) ->
 out({Transport, Socket}, Format, Params) ->
     Transport:send(Socket, [io_lib:format(Format, Params), <<"\r\n">>]).
 
-lookup_hostname({_Transport, Socket}) ->
+lookup_hostname({Transport, Socket}) ->
     %% @todo should probably be a service on its own
-    {ok, {Address, _Port}} = inet:peername(Socket),
+    {ok, {Address, _Port}} = Transport:peername(Socket),
     {ok, #hostent { h_name = Hostname }} = inet:gethostbyaddr(Address),
     {ok, Hostname}.
 
