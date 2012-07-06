@@ -33,6 +33,12 @@ command_to_atom(X) when is_list(X) ->
         _ -> {unknown, X}
     end.
 
+atom_to_command(ping) -> "PING";
+atom_to_command(privmsg) -> "PRIVMSG";
+atom_to_command(topic) -> "TOPIC";
+atom_to_command(join) -> "JOIN";
+atom_to_command(part) -> "PART".
+
 parse_argument(<<$:, X/binary>>) ->
     [X];
 parse_argument(<<X/binary>>) ->
@@ -75,7 +81,19 @@ stringify(P, C, A) ->
 render_numeric('RPL_WELCOME', Args) ->
     io_lib:format(":~s 001 ~s :Welcome to the ~s Internet Relay Chat Network ~s", Args);
 render_numeric('RPL_YOURHOST', Args) ->
-    io_lib:format(":~s 002 ~s :Your host is ~s, running version ~s", Args).
+    io_lib:format(":~s 002 ~s :Your host is ~s, running version ~s", Args);
+render_numeric('RPL_NOTOPIC', [Nick, Channel]) ->
+    io_lib:format(":~s 331 ~s ~s :No topic is set.",
+                  [pony:me(), Nick, Channel]);
+render_numeric('ERR_NOTEXTTOSEND', [Nick, Cmd]) ->
+    io_lib:format(":~s 412 ~s :No text to send",
+                  [pony:me(), Nick, atom_to_command(Cmd)]);
+render_numeric('ERR_NORECIPIENT', [Nick, Cmd]) ->
+    io_lib:format(":~s 411 ~s :No recipient given (~s)",
+                  [pony:me(), Nick, atom_to_command(Cmd)]);
+render_numeric('ERR_NEEDMOREPARAMS', [Nick, Cmd]) ->
+    io_lib:format(":~s 461 ~s ~s :Not enough parameters", [pony:me(), Nick,
+                                                           atom_to_command(Cmd)]).
 
 render({part, Source, Channel}) ->
     io_lib:format(":~s PART :~s", [Source, Channel]);

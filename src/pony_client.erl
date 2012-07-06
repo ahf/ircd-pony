@@ -151,16 +151,16 @@ handle_message(Prefix, Command, Args, #state { synchronized = no } = State) ->
 handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
     case {Prefix, Command, Args} of
         {<<>>, ping, []} ->
-            send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "PING"]),
+            send_numeric('ERR_NEEDMOREPARAMS', [CurNick, ping]),
             State;
         {<<>>, ping, [Server]} ->
             respond({pong, Server}),
             State;
         {<<>>, privmsg, []} ->
-            send_numeric('ERR_NORECIPIENT', [pony:me(), CurNick, "PRIVMSG"]),
+            send_numeric('ERR_NORECIPIENT', [CurNick, privmsg]),
             State;
         {<<>>, privmsg, [_Recipient]} ->
-            send_numeric('ERR_NOTEXTTOSEND', [pony:me(), CurNick, "PRIVMSG"]),
+            send_numeric('ERR_NOTEXTTOSEND', [CurNick, privmsg]),
             State;
         {<<>>, privmsg, [Recipient, Text]} ->
             PM = {privmsg, CurNick, Recipient, Text},
@@ -180,13 +180,13 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
         {<<>>, quit, [_Message]} ->
             State;
         {<<>>, topic, []} ->
-            send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "TOPIC"]),
+            send_numeric('ERR_NEEDMOREPARAMS', [CurNick, topic]),
             State;
         {<<>>, topic, [Channel]} ->
-            send_numeric('RPL_NOTOPIC', [pony:me(), CurNick, Channel]),
+            send_numeric('RPL_NOTOPIC', [CurNick, Channel]),
             State;
         {<<>>, join, []} ->
-            send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "JOIN"]),
+            send_numeric('ERR_NEEDMOREPARAMS', [CurNick, join]),
             State;
         {<<>>, join, [Channel]} ->
             ok = pony_chan_srv:join(Channel),
@@ -195,7 +195,7 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
              || Pid <- pony_chan_srv:channel_members(Channel)],
             State;
         {<<>>, part, []} ->
-            send_numeric('ERR_NEEDMOREPARAMS', [pony:me(), CurNick, "PART"]),
+            send_numeric('ERR_NEEDMOREPARAMS', [CurNick, part]),
             State;
         {<<>>, part, [Channel]} ->
             ok = pony_chan_srv:part(Channel),
