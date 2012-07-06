@@ -85,9 +85,12 @@ render_numeric('RPL_YOURHOST', Args) ->
 render_numeric('RPL_NOTOPIC', [Nick, Channel]) ->
     io_lib:format(":~s 331 ~s ~s :No topic is set.",
                   [pony:me(), Nick, Channel]);
-render_numeric('ERR_NOTEXTTOSEND', [Nick, Cmd]) ->
+render_numeric('ERR_ERRONEUSNICKNAME', [OldNick, Nick]) ->
+    io_lib:format(":~s 432 ~s ~s :Erroneous Nickname",
+                  [pony:me(), OldNick, Nick]);
+render_numeric('ERR_NOTEXTTOSEND', [Nick]) ->
     io_lib:format(":~s 412 ~s :No text to send",
-                  [pony:me(), Nick, atom_to_command(Cmd)]);
+                  [pony:me(), Nick]);
 render_numeric('ERR_NORECIPIENT', [Nick, Cmd]) ->
     io_lib:format(":~s 411 ~s :No recipient given (~s)",
                   [pony:me(), Nick, atom_to_command(Cmd)]);

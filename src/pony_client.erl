@@ -164,7 +164,7 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
             send_numeric('ERR_NORECIPIENT', [CurNick, privmsg]),
             State;
         {<<>>, privmsg, [_Recipient]} ->
-            send_numeric('ERR_NOTEXTTOSEND', [CurNick, privmsg]),
+            send_numeric('ERR_NOTEXTTOSEND', [CurNick]),
             State;
         {<<>>, privmsg, [Recipient, Text]} ->
             PM = {privmsg, CurNick, Recipient, Text},
@@ -214,7 +214,7 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
 handle_nick_user(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
     case {Prefix, Command, Args} of
         {<<>>, nick, []} ->
-            send_numeric('ERR_NONICKNAMEGIVEN', [pony:me(), CurNick]),
+            send_numeric('ERR_NONICKNAMEGIVEN', [CurNick]),
             State;
         {<<>>, nick, [NickName]} ->
             case pony_nick_srv:swap(CurNick, NickName) of
@@ -222,7 +222,7 @@ handle_nick_user(Prefix, Command, Args, #state { nickname = CurNick } = State) -
                     gproc:add_local_name({nick, NickName}),
                     State#state { nickname = NickName };
                 nick_in_use ->
-                    send_numeric('ERR_ERRONEUSNICKNAME', [pony:me(), CurNick]),
+                    send_numeric('ERR_ERRONEUSNICKNAME', [<<"*">>, NickName]),
                     State
             end;
         {<<>>, user, L}
