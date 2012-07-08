@@ -191,7 +191,7 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
             handle_topic(CurNick, Channel),
             State;
         {<<>>, topic, [Channel, Text]} ->
-            pony_chan_srv:set_topic(Channel, Text),
+            pony_chan_srv:set_topic(CurNick, Channel, Text),
             State;
         {<<>>, join, []} ->
             send_numeric('ERR_NEEDMOREPARAMS', [CurNick, join]),

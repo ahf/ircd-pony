@@ -115,6 +115,8 @@ render_numeric('ERR_NEEDMOREPARAMS', [Nick, Cmd]) ->
     io_lib:format(":~s 461 ~s ~s :Not enough parameters", [pony:me(), Nick,
                                                            atom_to_command(Cmd)]).
 
+render({topic, Source, Channel, Text}) ->
+    io_lib:format(":~s TOPIC ~s :~s", [Source, Channel, Text]);
 render({part, Source, Channel}) ->
     io_lib:format(":~s PART :~s", [Source, Channel]);
 render({join, Source, Channel}) ->

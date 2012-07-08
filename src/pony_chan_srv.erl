@@ -17,7 +17,7 @@
         ]).
 
 -export([channel_members/1,
-         set_topic/2,
+         set_topic/3,
          topic/1,
          part_channel/1,
          join_channel/1]).
@@ -64,9 +64,8 @@ part_channel(Channel) ->
 join_channel(Channel) ->
     gproc:add_local_property({channel, Channel}, client).
 
-set_topic(Channel, Topic) ->
-    [Chan] = ets:lookup(?CHAN_TAB, Channel),
-    ets:insert(?CHAN_TAB, Chan#channel{ topic = Topic }).
+set_topic(Who, Channel, Topic) ->
+    gen_server:call(?SERVER, {set_topic, Who, Channel, Topic}).
 
 topic(Channel) ->
     [#channel { topic = T}] = ets:lookup(?CHAN_TAB, Channel),
@@ -84,6 +83,12 @@ init([]) ->
     {ok, #state{}}.
 
 %% @private
+handle_call({set_topic, Who, Channel, Topic}, _From, State) ->
+    [Chan] = ets:lookup(?CHAN_TAB, Channel),
+    ets:insert(?CHAN_TAB, Chan#channel{ topic = Topic }),
+    [pony_client:msg(Pid, {topic, Who, Channel, Topic})
+     || Pid <- channel_members(Channel)],
+    {reply, ok, State};
 handle_call({join, ChanName}, {Pid, _Tag}, State) ->
     case ets:lookup(?CHAN_TAB, ChanName) of
         [] ->
