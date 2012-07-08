@@ -79,6 +79,10 @@ stringify(X) ->
 stringify(P, C, A) ->
     io_lib:format("~p~n", [[{prefix, P}, {command, C}, {args, A}]]).
 
+sep(_Sep, [])      -> [];
+sep(_Sep, [X])     -> [X];
+sep( Sep, [H | T]) -> [H, Sep | sep(Sep, T)].
+
 render_numeric('RPL_WELCOME', [Nick]) ->
     io_lib:format(":~s 001 ~s :Welcome to the ~s Internet Relay Chat Network ~s",
                  [pony:me(), Nick, pony:description(), Nick]);
@@ -91,6 +95,13 @@ render_numeric('RPL_NOTOPIC', [Nick, Channel]) ->
 render_numeric('RPL_TOPIC', [Nick, Chan, Topic]) ->
     io_lib:format(":~s 332 ~s ~s :~s",
                   [pony:me(), Nick, Chan, Topic]);
+render_numeric('RPL_NAMREPLY', [Nick, Chan, Names]) ->
+    io_lib:format(":~s 353 ~s ~s ~s :~s",
+                  [pony:me(), Nick, "=", %% This is a RatBox thing
+                   Chan, sep(" ", Names)]);
+render_numeric('RPL_ENDOFNAMES', [CurNick, Channel]) ->
+    io_lib:format(":~s 366 ~s ~s :End of /NAMES list.",
+                  [pony:me(), CurNick, Channel]);
 render_numeric('ERR_ERRONEUSNICKNAME', [OldNick, Nick]) ->
     io_lib:format(":~s 432 ~s ~s :Erroneous Nickname",
                   [pony:me(), OldNick, Nick]);

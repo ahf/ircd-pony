@@ -12,7 +12,7 @@
 
 %% API
 -export([start_link/0, swap/2, unregister/1]).
--export([lookup_nick/1]).
+-export([lookup_nick/1, nick/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -44,6 +44,13 @@ swap(<<"*">>, Name) ->
 
 unregister(Name) ->
     gen_server:call(?SERVER, {unregister, Name}).
+
+nick(Pid) when is_pid(Pid) ->
+    case ets:lookup(?TAB, Pid) of
+        [] ->
+            none;
+        [{_, N}] -> {value, N}
+    end.
 
 lookup_nick(Recipient) ->
     gproc:lookup_local_name({nick, Recipient}).

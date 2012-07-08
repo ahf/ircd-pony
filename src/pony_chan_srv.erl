@@ -18,7 +18,7 @@
 
 -export([channel_members/1,
          set_topic/2,
-         lookup_topic/1,
+         topic/1,
          part_channel/1,
          join_channel/1]).
 
@@ -68,7 +68,7 @@ set_topic(Channel, Topic) ->
     [Chan] = ets:lookup(?CHAN_TAB, Channel),
     ets:insert(?CHAN_TAB, Chan#channel{ topic = Topic }).
 
-lookup_topic(Channel) ->
+topic(Channel) ->
     [#channel { topic = T}] = ets:lookup(?CHAN_TAB, Channel),
     case T of
         undefined -> no_topic;

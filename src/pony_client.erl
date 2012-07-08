@@ -188,12 +188,7 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
             send_numeric('ERR_NEEDMOREPARAMS', [CurNick, topic]),
             State;
         {<<>>, topic, [Channel]} ->
-            case pony_chan_srv:lookup_topic(Channel) of
-                {topic, T} ->
-                    send_numeric('RPL_TOPIC', [CurNick, Channel, T]);
-                no_topic ->
-                    send_numeric('RPL_NOTOPIC', [CurNick, Channel])
-            end,
+            handle_topic(CurNick, Channel),
             State;
         {<<>>, topic, [Channel, Text]} ->
             pony_chan_srv:set_topic(Channel, Text),
@@ -204,8 +199,13 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
         {<<>>, join, [Channel]} ->
             ok = pony_chan_srv:join(Channel),
             pony_chan_srv:join_channel(Channel),
-            [msg(Pid, {join, CurNick, Channel})
-             || Pid <- pony_chan_srv:channel_members(Channel)],
+            Members = pony_chan_srv:channel_members(Channel),
+            [msg(Pid, {join, CurNick, Channel}) || Pid <- Members],
+            handle_topic(CurNick, Channel),
+            ChanNicks = [N || {value, N} <-
+                                [pony_nick_srv:nick(Pid) || Pid <- Members]],
+            send_numeric('RPL_NAMREPLY', [CurNick, Channel, ChanNicks]),
+            send_numeric('RPL_ENDOFNAMES', [CurNick, Channel]),
             State;
         {<<>>, part, []} ->
             send_numeric('ERR_NEEDMOREPARAMS', [CurNick, part]),
@@ -218,6 +218,15 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
             State;
         _ ->
             handle_nick_user(Prefix, Command, Args, State)
+    end.
+
+handle_topic(CurNick, Channel) ->
+    case pony_chan_srv:topic(Channel) of
+        {topic, T} ->
+            %% TODO: TopicWho
+            send_numeric('RPL_TOPIC', [CurNick, Channel, T]);
+        no_topic ->
+            send_numeric('RPL_NOTOPIC', [CurNick, Channel])
     end.
 
 handle_nick_user(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
