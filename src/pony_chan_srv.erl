@@ -17,6 +17,7 @@
         ]).
 
 -export([channel_members/1,
+         list_channels/0,
          set_topic/3,
          topic/1,
          part_channel/1,
@@ -32,8 +33,8 @@
 -define(SERVER, ?MODULE). 
 
 -record(channel,
-        { name,
-          topic }).
+        { name :: binary(),
+          topic :: binary() | undefined }).
 
 -record(state, {}).
 
@@ -57,6 +58,10 @@ quits(Pid, Name) ->
 
 channel_members(Channel) ->
     [Pid || {Pid, _} <- gproc:lookup_local_properties({channel, Channel})].
+
+list_channels() ->
+    Channels = ets:match_object(?CHAN_TAB, '_'),
+    [{N, length(channel_members(N)), T} || #channel { topic = T, name = N} <- Channels].
 
 part_channel(Channel) ->
     gproc:unreg({p, l, {channel, Channel}}).

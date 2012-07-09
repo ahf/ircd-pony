@@ -216,6 +216,16 @@ handle_message(Prefix, Command, Args, #state { nickname = CurNick } = State) ->
              || Pid <- pony_chan_srv:channel_members(Channel)],
             pony_chan_srv:part_channel(Channel),
             State;
+        {<<>>, list, [<<>>]} ->
+            send_numeric('RPL_LISTSTART', [CurNick]),
+            Channels = pony_chan_srv:list_channels(),
+            [send_numeric('RPL_LIST', [CurNick, Chan, Count, case Topic of
+                                                                 undefined -> "";
+                                                                 X -> X
+                                                             end])
+             || {Chan, Count, Topic} <- Channels],
+            send_numeric('RPL_LISTEND', [CurNick]),
+            State;
         _ ->
             handle_nick_user(Prefix, Command, Args, State)
     end.

@@ -95,6 +95,15 @@ render_numeric('RPL_NOTOPIC', [Nick, Channel]) ->
 render_numeric('RPL_TOPIC', [Nick, Chan, Topic]) ->
     io_lib:format(":~s 332 ~s ~s :~s",
                   [pony:me(), Nick, Chan, Topic]);
+render_numeric('RPL_LISTSTART', [Nick]) ->
+    io_lib:format(":~s 321 ~s Channel :Users  Topic",
+                  [pony:me(), Nick]);
+render_numeric('RPL_LIST', [Nick, Chan, Count, Topic]) ->
+    io_lib:format(":~s 322 ~s ~s ~B :~s",
+                  [pony:me(), Nick, Chan, Count, Topic]);
+render_numeric('RPL_LISTEND', [Nick]) ->
+    io_lib:format(":~s 323 ~s :End of /LIST",
+                  [pony:me(), Nick]);
 render_numeric('RPL_NAMREPLY', [Nick, Chan, Names]) ->
     io_lib:format(":~s 353 ~s ~s ~s :~s",
                   [pony:me(), Nick, "=", %% This is a RatBox thing
